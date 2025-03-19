@@ -1,0 +1,43 @@
+---
+- name: Install Python and pip packages for the reverse proxy
+  apt:
+    name:
+      - python3
+      - python3-pip
+    state: present
+    update_cache: yes
+
+- name: Install required Python libraries
+  pip:
+    name:
+      - flask
+      - psycopg2-binary
+
+- name: Deploy reverse proxy script from files directory
+  template:
+    src: reverse_sql_proxy.py.j2
+    dest: /usr/local/bin/reverse_proxy.py
+    mode: '0755'
+
+- name: Create systemd service file for reverse proxy
+  copy:
+    dest: /etc/systemd/system/reverse-proxy.service
+    content: |
+      [Unit]
+      Description=Reverse Proxy Service
+
+      [Service]
+      ExecStart=/usr/bin/env python3 /usr/local/bin/reverse_proxy.py
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+  notify:
+    - Reload systemd
+
+- name: Enable and start reverse proxy service
+  systemd:
+    name: reverse-proxy.service
+    state: started
+    enabled: yes
+

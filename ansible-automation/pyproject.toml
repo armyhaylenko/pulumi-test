@@ -1,0 +1,9 @@
+[tool.poetry]
+name = "ansible-automation"
+version = "0.1.0"
+description = "The description of the package"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.11"
+ansible = "^11.3.0"

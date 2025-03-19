@@ -1,0 +1,9 @@
+- hosts: master
+  become: yes
+  roles:
+    - master
+
+- hosts: replica
+  become: yes
+  roles:
+    - replica

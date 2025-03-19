@@ -1,0 +1,54 @@
+---
+- name: Install Python and pip packages for the replica
+  apt:
+    name:
+      - python3
+      - python3-pip
+      - acl
+    state: present
+    update_cache: yes
+
+- name: Install required Python libraries
+  pip:
+    name:
+      - psycopg2-binary
+
+- name: Install PostgreSQL
+  apt:
+    name: postgresql
+    state: present
+    update_cache: yes
+
+- name: Configure postgresql.conf to listen on all interfaces
+  lineinfile:
+    path: /etc/postgresql/13/main/postgresql.conf
+    regexp: '^#?listen_addresses'
+    line: "listen_addresses = '*'"
+  notify:
+    - Restart PostgreSQL
+
+- name: Add master hosts to pg_hba.conf
+  blockinfile:
+    path: /etc/postgresql/13/main/pg_hba.conf
+    marker: "# {mark} MASTER HOSTS"
+    block: |
+      {% for host in groups['master'] %}
+      host    all    all    {{ hostvars[host]['vpc_host'] | default(host) }}/32    md5
+      {% endfor %}
+  notify:
+    - Restart PostgreSQL
+
+- name: Ensure PostgreSQL service is started and enabled
+  service:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Create PostgreSQL user
+  postgresql_user:
+    user: "appuser"
+    password: "appuser"
+    role_attr_flags: "CREATEDB,NOSUPERUSER"
+  become: true
+  become_user: postgres
+
